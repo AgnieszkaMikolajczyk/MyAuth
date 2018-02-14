@@ -1,0 +1,8 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Access denied</h2>
+@Html.ActionLink("Go back to home page", "Index", "Home", null, null)
+

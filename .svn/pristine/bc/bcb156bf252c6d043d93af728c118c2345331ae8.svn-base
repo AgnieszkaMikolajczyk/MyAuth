@@ -1,0 +1,7 @@
+﻿
+@{
+    ViewBag.Title = "RestrictedIndex";
+}
+
+<h2>RestrictedIndex</h2>
+

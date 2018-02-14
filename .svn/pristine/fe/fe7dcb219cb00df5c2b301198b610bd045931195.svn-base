@@ -1,0 +1,81 @@
+﻿using MyAuth.Models.EDM;
+using MyAuth.Models.UserManagementModels;
+using System;
+using System.Linq;
+using System.Web;
+using System.Web.Mvc;
+using System.Web.Security;
+
+namespace MyAuth.Controllers
+{
+    public class UserManagementController : Controller
+    {
+        [AllowAnonymous]
+        public ActionResult SignIn(string returnUrl)
+        {
+            ViewBag.ReturnUrl = returnUrl;
+            return View();
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        [ValidateAntiForgeryToken]
+        public ActionResult SignIn(SignInViewModel model, string whereToUrl)
+        {
+            if (!ModelState.IsValid)
+            {
+                return View(model);
+            }
+
+            using (MyAuthContext ctx = new MyAuthContext())
+            {
+
+                if (VerifyPassword(model.Email, model.Password))
+                {
+                    var user = (from u in ctx.Users
+                                join r in ctx.Roles on u.RoleID equals r.ID
+                                where u.Email == model.Email
+                                select new UserProfile
+                                {
+                                    Email = u.Email,
+                                    Name = u.Name,
+                                    Role = r.Name,
+                                }).FirstOrDefault();
+
+                    var authTicket = new FormsAuthenticationTicket(1, user.Name, DateTime.Now, DateTime.Now.AddMinutes(20), model.RememberMe, user.Role);
+                    string encryptedTicket = FormsAuthentication.Encrypt(authTicket);
+                    var authCookie = new HttpCookie(FormsAuthentication.FormsCookieName, encryptedTicket);
+                    HttpContext.Response.Cookies.Add(authCookie);
+                    return RedirectToLocal(whereToUrl);
+
+                }
+                else
+                {
+                    ModelState.AddModelError("", "Invalid login attempt.");
+                    return View(model);
+                }
+            }
+        }
+
+        private ActionResult RedirectToLocal(string returnUrl)
+        {
+            if (Url.IsLocalUrl(returnUrl))
+            {
+                return Redirect(returnUrl);
+            }
+            return RedirectToAction("Index", "Home");
+        }
+
+        bool VerifyPassword(object email, object password)
+        {
+            return true;
+        }
+
+        public ActionResult LogOff()
+        {
+            FormsAuthentication.SignOut();
+            return RedirectToAction("Index", "Home");
+        }
+
+    }
+}
